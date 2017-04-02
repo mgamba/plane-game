@@ -3,6 +3,7 @@
   var ctx = canvas.getContext('2d');
   var raf;
   var gameIsActive = false;
+  var coins = 0;
 
   var packageImage = new Image();
   packageImage.src = './images/gold-money-parachute.png';
@@ -13,6 +14,7 @@
   var plane = new Plane(150, 0);
   var package = new Package(0, 0);
   var bird = new Bird(0, 0);
+  var house = new House(0, 0);
 
   function drawBoard() {
     if (gameIsActive) {
@@ -21,6 +23,7 @@
       drawPlane();
       drawPackage();
       drawBird();
+      drawHouse();
       raf = window.requestAnimationFrame(drawBoard);
     }
   }
@@ -37,14 +40,65 @@
     bird.draw();
   }
 
+  function drawHouse() {
+    house.draw();
+  }
+
   function detectCollision() {
     if (overlap(plane.coords(), bird.coords())) {
       bird.hit();
+    }
+
+    if (overlap(package.coords(), house.coords())) {
+      package.hit();
     }
   }
 
   function overlap(a, b) {
     return (b.x2 >= a.x1) && (b.x1 <= a.x2) && (b.y2 >= a.y1) && (b.y1 <= a.y2)
+  }
+
+  function addPoint() {
+    coins++;
+  }
+
+  function losePoint() {
+    coins && coins--;
+  }
+
+  function House(x, y) {
+    this.x = x;
+    this.y = y;
+    this.w = 38;
+    this.h = 42;
+    this.coords = function() {
+      return {
+        x1: this.x,
+        y1: this.y,
+        x2: this.x + this.w,
+        y2: this.y + this.h
+      }
+    }
+
+    var image = new Image();
+    image.src = './images/house.png';
+
+    this.isBuilt = false;
+
+    this.draw = function() {
+      if (this.isBuilt) {
+        this.x -= 1;
+        if (this.x + this.w < 0) {
+          this.isBuilt = false;
+        } else {
+          ctx.drawImage(image, this.x, this.y, this.w, this.h);
+        }
+      } else {
+        this.x = canvas.width + this.w;
+        this.y = canvas.height - this.h;
+        this.isBuilt = true;
+      }
+    };
   }
 
   function Bird(x, y) {
@@ -143,15 +197,34 @@
     this.y = y;
     this.w = 50;
     this.h = 70;
+    this.coords = function() {
+      return {
+        x1: this.x,
+        y1: this.y,
+        x2: this.x + this.w,
+        y2: this.y + this.h
+      }
+    }
+
+    this.hit = function() {
+      if (this.isActive) {
+        this.isActive = false;
+        addPoint();
+      }
+    }
+
     this.isActive = false;
     this.image = packageImage;
     this.draw = function() {
-      if (this.isActive && this.aboveGround()) {
-        ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
-        this.x += 1;
-        this.y += 2;
-      } else {
-        this.isActive = false;
+      if (this.isActive) {
+        if (this.aboveGround()) {
+          ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+          this.x += 1;
+          this.y += 2;
+        } else {
+          this.isActive = false;
+          losePoint();
+        }
       }
     };
     this.aboveGround = function() {
@@ -179,7 +252,7 @@
   function mousemoveHandler(e) {
     var x = e.offsetX;
     var y = e.offsetY;
-    plane.y = Math.min(y, canvas.height * 1 / 2);
+    plane.y = Math.min(y, canvas.height - plane.h - package.h - house.h - 50);
   }
 
   function mouseClickHandler(e) {
