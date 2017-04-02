@@ -11,11 +11,15 @@
 
   var plane = new Plane(150, 0);
   var package = new Package(0, 0);
+  var bird = new Bird(0, 0);
 
   function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    detectCollision();
     drawPlane();
     drawPackage();
+    drawBird();
+    raf = window.requestAnimationFrame(drawBoard);
   }
 
   function drawPlane() {
@@ -24,6 +28,67 @@
 
   function drawPackage() {
     package.draw();
+  }
+
+  function drawBird() {
+    bird.draw();
+  }
+
+  function detectCollision() {
+  }
+
+  function Bird(x, y) {
+    this.x = x;
+    this.y = y;
+    this.w = 38;
+    this.h = 42;
+
+    var images = [];
+    var imageCount = 8;
+    for (var i=0; i < imageCount; i++) {
+      var image = new Image();
+      image.src = './images/birds/bird-'+i+'.png';
+      images.push(image);
+    }
+    this.isFlying = false;
+
+    var deadImage = new Image();
+    deadImage.src = './images/birds/bird-x.png';
+    this.isHit = false;
+
+    this.draw = function() {
+      if (this.isFlying) {
+        console.log(this.x, this.y);
+        this.x -= 4;
+        if (this.x + this.w < 0) {
+          this.isFlying = false;
+        } else {
+          ctx.drawImage(nextImage(), this.x, this.y, this.w, this.h);
+        }
+      } else if (this.isHit) {
+        ctx.drawImage(deadImage, this.x, this.y, this.w, this.h);
+      } else {
+        this.x = canvas.width + this.w;
+        this.y = Math.random() * canvas.height * 2 / 3;
+        this.isFlying = true;
+      }
+    };
+
+    var spriteIndex = 0;
+    var spriteDirection = 1;
+    var spriteDrag = 4;
+    var spriteDragCount = 0;
+    function nextImage() {
+      if (!(spriteDragCount++ % spriteDrag)) {
+        if (spriteIndex == 0) {
+          spriteDirection = 1;
+        } else if (spriteIndex >= imageCount - 1) {
+          spriteDirection = -1;
+        }
+        spriteIndex += (spriteDirection);
+      }
+      return images[spriteIndex];
+    }
   }
 
   function Plane(x, y) {
@@ -58,26 +123,31 @@
     this.isActive = false;
     this.image = packageImage;
     this.draw = function() {
-      if (this.isActive) {
+      if (this.isActive && this.aboveGround()) {
         ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
         this.x += 1;
         this.y += 2;
+      } else {
+        this.isActive = false;
       }
-    }
+    };
+    this.aboveGround = function() {
+      return this.y + this.h < canvas.height;
+    };
     this.contains = function(pos) {
       var l = this.x;
       var r = this.x + this.w;
       var t = this.y - this.h;
       var b = this.y;
       return (pos.x > l && pos.x < r && pos.y > t && pos.y < b);
-    }
+    };
     this.deploy = function(deployFrom) {
       if (this.isActive != true) {
         this.isActive = true;
         this.x = deployFrom.x - (this.w / 2);
         this.y = deployFrom.y;
       }
-    }
+    };
   };
 
   function endGame() {
@@ -92,11 +162,9 @@
     var x = e.offsetX;
     var y = e.offsetY;
     plane.y = y;
-    drawBoard();
   }
 
   function mouseClickHandler(e) {
-    console.log('mouseClickHandler');
     package.deploy(plane.deployPoint())
   }
 
@@ -108,6 +176,7 @@
 
     var startButton = document.getElementById('start-button');
     startButton.parentNode.removeChild(startButton);
-    drawBoard();
+
+    raf = window.requestAnimationFrame(drawBoard);
   }
 })()
