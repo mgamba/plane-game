@@ -1,0 +1,13 @@
+#game-board {
+  border: solid 1px black;
+}
+
+#game-board.active:hover {
+/*  cursor: none; */
+}
+
+#start-button {
+  position: absolute;
+  left: 260px;
+  top: 140px;
+}
