@@ -4,6 +4,8 @@
   var raf;
   var gameIsActive = false;
   var coins = 0;
+  var maxCoins = 5;
+  var gameWon = false;
 
   var packageImage = new Image();
   packageImage.src = './images/gold-money-parachute.png';
@@ -24,6 +26,7 @@
       drawPackage();
       drawBird();
       drawHouse();
+      drawCoins();
       raf = window.requestAnimationFrame(drawBoard);
     }
   }
@@ -42,6 +45,38 @@
 
   function drawHouse() {
     house.draw();
+  }
+
+  function drawCoins() {
+    var r = 15
+    var space = 5;
+    var w = r * 2 + space;
+    var x = canvas.width - (maxCoins * w);
+    var y = 20;
+
+    for (var i = 0; i < maxCoins; i++) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2, true);
+      ctx.closePath();
+      if (i < coins) {
+        ctx.strokeStyle = 'gold';
+        ctx.fillStyle = 'yellow';
+      } else {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'gray';
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      if (i < coins) {
+        ctx.textAlign = "center";
+        ctx.font = "bold 12pt Arial";
+        ctx.fillStyle = 'gold';
+        ctx.fillText("$", x, y + 5);
+      }
+
+      x += w;
+    }
   }
 
   function detectCollision() {
@@ -64,6 +99,11 @@
 
   function addPoint() {
     coins++;
+    if (coins == maxCoins) {
+      gameWon = true;
+      drawCoins();
+      endGame();
+    }
   }
 
   function losePoint() {
@@ -218,7 +258,10 @@
     }
 
     this.hit = function() {
-      this.isActive = false;
+      if (this.isActive) {
+        this.isActive = false;
+        losePoint();
+      }
     }
 
     this.isActive = false;
@@ -253,7 +296,12 @@
     setTimeout(function() {
       ctx.textAlign = "center";
       ctx.font = "bold 38pt Arial";
-      ctx.fillText("Nice Flyin' Ace!", canvas.width * 0.5, canvas.height * 0.25);
+      ctx.fillStyle = 'black';
+      if (gameWon) {
+        ctx.fillText("Nice Flyin' Ace!", canvas.width * 0.5, canvas.height * 0.5);
+      } else {
+        ctx.fillText("Better luck next time!", canvas.width * 0.5, canvas.height * 0.5);
+      }
     }, 1000);
   }
 
