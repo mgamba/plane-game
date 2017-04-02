@@ -2,6 +2,7 @@
   var canvas  = document.getElementById('game-board');
   var ctx = canvas.getContext('2d');
   var raf;
+  var gameIsActive = false;
 
   var packageImage = new Image();
   packageImage.src = './images/gold-money-parachute.png';
@@ -14,12 +15,14 @@
   var bird = new Bird(0, 0);
 
   function drawBoard() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    detectCollision();
-    drawPlane();
-    drawPackage();
-    drawBird();
-    raf = window.requestAnimationFrame(drawBoard);
+    if (gameIsActive) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      detectCollision();
+      drawPlane();
+      drawPackage();
+      drawBird();
+      raf = window.requestAnimationFrame(drawBoard);
+    }
   }
 
   function drawPlane() {
@@ -35,6 +38,13 @@
   }
 
   function detectCollision() {
+    if (overlap(plane.coords(), bird.coords())) {
+      bird.hit();
+    }
+  }
+
+  function overlap(a, b) {
+    return (b.x2 >= a.x1) && (b.x1 <= a.x2) && (b.y2 >= a.y1) && (b.y1 <= a.y2)
   }
 
   function Bird(x, y) {
@@ -42,6 +52,14 @@
     this.y = y;
     this.w = 38;
     this.h = 42;
+    this.coords = function() {
+      return {
+        x1: this.x,
+        y1: this.y,
+        x2: this.x + this.w,
+        y2: this.y + this.h
+      }
+    }
 
     var images = [];
     var imageCount = 8;
@@ -55,10 +73,13 @@
     var deadImage = new Image();
     deadImage.src = './images/birds/bird-x.png';
     this.isHit = false;
+    this.hit = function() {
+      this.isHit = true;
+      this.isFlying = false;
+    }
 
     this.draw = function() {
       if (this.isFlying) {
-        console.log(this.x, this.y);
         this.x -= 4;
         if (this.x + this.w < 0) {
           this.isFlying = false;
@@ -67,6 +88,7 @@
         }
       } else if (this.isHit) {
         ctx.drawImage(deadImage, this.x, this.y, this.w, this.h);
+        endGame();
       } else {
         this.x = canvas.width + this.w;
         this.y = Math.random() * canvas.height * 2 / 3;
@@ -94,18 +116,19 @@
   function Plane(x, y) {
     this.x = x;
     this.y = y;
+    this.coords = function() {
+      return {
+        x1: this.x,
+        y1: this.y,
+        x2: this.x + this.w,
+        y2: this.y + this.h
+      }
+    }
     this.w = 110;
     this.h = 60;
     this.image = planeImage;
     this.draw = function() {
       ctx.drawImage(this.image, this.x, Math.min(this.y, canvas.height - this.h), this.w, this.h);
-    };
-    this.contains = function(pos) {
-      var l = this.x;
-      var r = this.x + this.w;
-      var t = this.y - this.h;
-      var b = this.y;
-      return (pos.x > l && pos.x < r && pos.y > t && pos.y < b);
     };
     this.deployPoint = function() {
       return {
@@ -134,13 +157,6 @@
     this.aboveGround = function() {
       return this.y + this.h < canvas.height;
     };
-    this.contains = function(pos) {
-      var l = this.x;
-      var r = this.x + this.w;
-      var t = this.y - this.h;
-      var b = this.y;
-      return (pos.x > l && pos.x < r && pos.y > t && pos.y < b);
-    };
     this.deploy = function(deployFrom) {
       if (this.isActive != true) {
         this.isActive = true;
@@ -151,6 +167,8 @@
   };
 
   function endGame() {
+    gameIsActive = false;
+
     setTimeout(function() {
       ctx.textAlign = "center";
       ctx.font = "bold 38pt Arial";
@@ -161,7 +179,7 @@
   function mousemoveHandler(e) {
     var x = e.offsetX;
     var y = e.offsetY;
-    plane.y = y;
+    plane.y = Math.min(y, canvas.height * 1 / 2);
   }
 
   function mouseClickHandler(e) {
@@ -177,6 +195,7 @@
     var startButton = document.getElementById('start-button');
     startButton.parentNode.removeChild(startButton);
 
+    gameIsActive = true;
     raf = window.requestAnimationFrame(drawBoard);
   }
 })()
