@@ -50,6 +50,10 @@
     }
 
     if (overlap(package.coords(), house.coords())) {
+      package.delivered();
+    }
+
+    if (overlap(package.coords(), bird.coords())) {
       package.hit();
     }
   }
@@ -206,11 +210,15 @@
       }
     }
 
-    this.hit = function() {
+    this.delivered = function() {
       if (this.isActive) {
         this.isActive = false;
         addPoint();
       }
+    }
+
+    this.hit = function() {
+      this.isActive = false;
     }
 
     this.isActive = false;
